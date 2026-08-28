@@ -91,3 +91,27 @@ REUSABLE          (different degrees of size, reusability,     NON-REUSABLE
 - 👉 **Not meant to be reused** (**not a problem!**)
 
 > 🔑 A healthy app has components spread across the whole spectrum — small, reusable, low-complexity pieces **and** a handful of huge, non-reusable ones (like page components). Neither extreme is wrong on its own.
+
+## Component Categories
+
+👉 Most of your components will **naturally** fall into **one of three categories**:
+
+**1. Stateless / presentational components**
+
+- 👉 **No state**
+- 👉 Can receive **props** and simply **present** received data or other content
+- 👉 Usually **small and reusable**
+- Example: `usePopcorn` logo, `Found 3 results`, a single `Movie` item (`Inception 🗓 2010`)
+
+**2. Stateful components**
+
+- 👉 **Have state**
+- 👉 Can still be **reusable**
+- Example: the `Search` input (`Search movies...`), the movie list that toggles open/closed
+
+**3. Structural components**
+
+- 👉 **"Pages"**, **"layouts"**, or **"screens"** of the app
+- 👉 Result of **composition**
+- 👉 Can be **huge and non-reusable** (but don't have to)
+- Example: the whole `usePopcorn` app layout (navbar + movie list + watched list)
