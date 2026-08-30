@@ -115,3 +115,62 @@ REUSABLE          (different degrees of size, reusability,     NON-REUSABLE
 - 👉 Result of **composition**
 - 👉 Can be **huge and non-reusable** (but don't have to)
 - Example: the whole `usePopcorn` app layout (navbar + movie list + watched list)
+
+## What Is Component Composition?
+
+**"Using" a component (❌ not composition)**
+
+```jsx
+function Modal() {
+  return (
+    <div className="modal">
+      <Success />
+    </div>
+  );
+}
+
+function Success() {
+  return <p>Well done!</p>;
+}
+```
+
+- 👉 `Success` is **hardcoded inside** `Modal`
+- ❌ We can **NOT reuse** `Modal` with different content (e.g. an `Error` message)
+
+**Component composition (✅)**
+
+```jsx
+function Modal({ children }) {
+  return (
+    <div className="modal">
+      {children}
+    </div>
+  );
+}
+
+function Error() {
+  return <p>This went wrong!</p>;
+}
+```
+
+```jsx
+<Modal>
+  <Success />
+</Modal>
+
+<Modal>
+  <Error />
+</Modal>
+```
+
+- 👉 `Success` (or `Error`) is **passed into** `Modal` as `children`, instead of being hardcoded
+- ✅ Now we **CAN reuse** `Modal` with whatever content we pass in
+
+> 🔑 **Component composition** = combining different components using the `children` prop (or explicitly defined props). It lets us create **highly reusable and flexible components**, and is essential for building layouts (e.g. wrapping a page, sidebar, or modal around arbitrary content).
+
+**With component composition, we can:**
+
+1. **Create highly reusable and flexible components**
+2. **Fix prop drilling** (great for layouts)
+
+> 💡 This is possible because **components don't need to know their children in advance** — whatever JSX gets passed in as `children` (or another prop) is simply rendered where that placeholder sits.
