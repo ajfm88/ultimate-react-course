@@ -174,3 +174,29 @@ function Error() {
 2. **Fix prop drilling** (great for layouts)
 
 > 💡 This is possible because **components don't need to know their children in advance** — whatever JSX gets passed in as `children` (or another prop) is simply rendered where that placeholder sits.
+
+## Props as an API
+
+- 👉 **Component props = Public API** of the component
+- 👉 The **component consumer** (person using the component in their app) interacts with the component through its props
+- 👉 The **component creator** (person who built the component) defines which props the component accepts — this is the **abstraction that encapsulates UI and logic**
+
+### Finding the Right Balance of Props
+
+```
+TOO LITTLE PROPS ◄─────────────── ⊕ ───────────────► TOO MANY PROPS
+```
+
+**Too little props**
+
+- 👉 Not **flexible** enough
+- 👉 Might not be **useful**
+
+**Too many props**
+
+- 👉 Too **hard** to use
+- 👉 Exposing too much **complexity**
+- 👉 **Hard-to-write** code
+- 👉 Provide good **default** values
+
+> 🔑 We need to find the **right balance** between too little and too many props, that works for both the **consumer** and the **creator**.
