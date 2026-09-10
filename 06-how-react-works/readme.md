@@ -38,26 +38,85 @@
 
 - The browser repaints the screen → **Updated UI on screen**
 
-#### Reconciliation + Diffing
+> ⚠️ **Terminology trap:** React's "render phase" ≠ the everyday meaning of "render" (displaying stuff on screen). The everyday meaning = **render phase + commit phase** combined. Only the **commit phase** actually touches the DOM.
+
+### How Renders Are Triggered
+
+- Only **2** things trigger a render: **initial render** (app first runs) and a **state update** (re-render)
+- 👉 A triggered render applies to the **entire application**, not just the component that changed — React re-runs *all* component functions from the root down
+  - In practice it *looks* like only the updated component re-renders (what we assumed earlier in the course) — that's the practical effect, not what happens internally
+- 👉 Renders aren't triggered instantly — they're **scheduled** for when the JS engine is free (usually imperceptible, a few ms). Multiple `setState` calls in the same event handler get **batched** into one render
+
+### Correcting the Earlier "State → View" Mental Model
+
+Two simplifications from the earlier `STATE → RENDER → UPDATED VIEW` diagram turn out to be **not literally true**:
+
+- ❌ "Rendering updates the screen/DOM" — rendering is just calling component functions, no DOM touched
+- ❌ "React discards the old view and replaces it entirely on re-render" — the DOM is **not** thrown away wholesale for a re-rendered instance
+
+What actually happens instead is covered next (render phase internals).
+
+### The Virtual DOM (React Element Tree)
+
+- **Virtual DOM** = the tree of **all React elements** created from every instance in the component tree — just a plain JS object, cheap/fast to (re)create
+- 👉 The React team downplays the term now (not in official docs anymore) — it's just a React element tree, nothing magical. Also **unrelated** to the browser's "Shadow DOM"
+- 🚨 **Key rule:** rendering a component **re-renders all of its child components too** — regardless of whether their props changed
+  - Why: React doesn't know in advance whether a parent update will affect its children, so it plays it safe by default
+  - So updating state high in the tree (e.g. the root) re-renders the *entire app* — but again, this only recreates the **virtual DOM**, not the real DOM, so it's cheap for small/medium apps
+- 👉 The new virtual DOM then gets **reconciled** against the **current Fiber tree** (the tree from before the update) — this is done by React's reconciler, which is literally named **Fiber** (hence "Fiber tree"). Output = an **updated Fiber tree**
+
+### Why Reconciliation Exists
+
+- Why not just rewrite the whole DOM on every state change? Because that'd be wasteful:
+  1. Writing to the DOM is (relatively) **slow**
+  2. Usually only a **small part** of the DOM actually needs to change (e.g. `showModal = true` only needs the modal's markup inserted — the rest of the page stays put)
+- **Reconciliation** = deciding exactly which DOM elements need to be **inserted, deleted, or updated** to match the latest state → produces a list of DOM ops
+- The **reconciler** (Fiber) is the "engine"/heart of React — it's what lets us just describe *what* the UI should look like (via state) instead of manually touching the DOM ourselves
+
+### The Fiber Tree
+
+- On initial render, Fiber builds a **Fiber tree** from the virtual DOM — one **Fiber** per component instance **and** per DOM element (both trees cover the full DOM structure, not just React components)
+- 🔑 Unlike React elements, **Fibers are never recreated** — the Fiber tree persists and is **mutated in place** on every reconciliation. That's why it's the natural home for a component instance's **current state, props, side effects, hooks list, and queue of pending work**
+- A Fiber = a **"unit of work"**
+- Structurally, Fibers form a **linked list**, not a plain parent/child tree: first child links to parent, other children link to their previous sibling — this makes the work easier for React to process incrementally
+- Because work is broken into Fibers, rendering can happen **asynchronously**: split into chunks, prioritized, paused/resumed, or discarded — invisible to us, but it's what powers concurrent features (**Suspense**, transitions, React 18+) and keeps long renders from blocking the JS engine. Only possible because the render phase produces no visible DOM output yet
+
+### Reconciliation Worked Example (`showModal: true → false`)
 
 ```
 CURRENT FIBER TREE          UPDATED FIBER TREE (workInProgress)
       App                          App
    ┌───┼────┐                   ┌───┼────┐
- Video Modal Btn      →       Video Modal Btn
-        │                            │
-     Overlay                     Overlay
-     ┌──┴──┐                     ┌──┴──┐
-    h3   button                 h3   button
+ Video Modal Btn      →       Video Modal Btn   ← text updated
+        │                       (unchanged)  ✗ deleted (with children)
+     Overlay
+     ┌──┴──┐
+    h3   button
 ```
 
-- Example: toggling `showModal` from `true` to `false` produces a **new Virtual DOM**
-- React compares the **current Fiber tree** against the **new Virtual DOM** using **Reconciliation + Diffing**
-- 🔑 Elements are compared based on their **position in the tree**
-- The result is an **updated Fiber tree**, marking exactly what needs to change in the DOM: text updates, deletions, etc.
-- Only the **DOM work** that's actually needed gets flagged — here, `Modal`, `Overlay`, `h3`, and `button` are marked for **deletion**, and `Btn`'s text is marked for an **update**
+- New virtual DOM is diffed against the current Fiber tree → produces the **"work in progress" tree** (React's internal name for the updated Fiber tree)
+- **Diffing** = comparing elements **by their position in the tree**, current vs. updated
+- Per-Fiber outcomes seen in this example:
+  - `Btn` text changed → marked **DOM update**
+  - `Modal`/`Overlay`/`h3`/`button` no longer in the new tree → marked **DOM deletion**
+  - `Video` re-rendered (child of `App`) but **unchanged** → no DOM mutation at all, even though its component function ran again
+- All the flagged mutations get collected into a **list of effects**, which the **commit phase** then applies to the real DOM
+- 👉 Jonas notes even this is still a simplified version of what Fiber actually does
 
-> 🔑 **Takeaway:** React doesn't throw away and rebuild the whole DOM on every update. It builds a new Virtual DOM, diffs it against the previous Fiber tree by tree position, and only touches the DOM nodes that actually changed.
+### Commit Phase, Precisely
+
+- Commit walks the **list of effects** and applies each DOM insert/delete/update — "flushing" updates to the DOM
+- **Synchronous, uninterruptible** — unlike the render phase, it can't pause. Necessary so the DOM never shows a half-updated (inconsistent) UI
+- After commit, the `workInProgress` Fiber tree **becomes the `current` tree** for the next cycle (reused, never rebuilt — same tree, just mutated again next time)
+- 🔑 **Library split:** the **render phase** is done by **React**; the **commit phase** (actually writing the DOM) is done by a separate library, **ReactDOM**; the final repaint is the **browser's** job, unrelated to React
+
+### Why React and ReactDOM Are Separate: "Hosts" and "Renderers"
+
+- React itself **never touches the DOM** and doesn't even know where its render output will end up — it's platform-agnostic by design
+- The DOM is just **one possible "host"**. Others: **React Native** (iOS/Android), **Remotion** (video), Word/PDF/Figma via other renderer packages
+- Each host has its own **renderer** package (ReactDOM, React Native, etc.) that takes the render phase's output and **commits** it to that host
+- 👉 "Renderer" is a misleading name — renderers don't render, they **commit** (name predates React splitting render/commit into two phases)
+- This is also *why* `index.js` imports both **React** (render phase) and **ReactDOM** (commit phase) separately
 
 ## Project Setup and Walkthrough
 
