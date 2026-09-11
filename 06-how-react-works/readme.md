@@ -47,14 +47,7 @@
   - In practice it *looks* like only the updated component re-renders (what we assumed earlier in the course) — that's the practical effect, not what happens internally
 - 👉 Renders aren't triggered instantly — they're **scheduled** for when the JS engine is free (usually imperceptible, a few ms). Multiple `setState` calls in the same event handler get **batched** into one render
 
-### Correcting the Earlier "State → View" Mental Model
-
-Two simplifications from the earlier `STATE → RENDER → UPDATED VIEW` diagram turn out to be **not literally true**:
-
-- ❌ "Rendering updates the screen/DOM" — rendering is just calling component functions, no DOM touched
-- ❌ "React discards the old view and replaces it entirely on re-render" — the DOM is **not** thrown away wholesale for a re-rendered instance
-
-What actually happens instead is covered next (render phase internals).
+> ⚠️ **Correcting the earlier mental model:** the old `STATE → RENDER → UPDATED VIEW` diagram implied rendering touches the screen directly and that re-rendering wholesale replaces the old DOM. Neither is literally true — rendering just calls component functions (no DOM touched), and the DOM is never thrown away wholesale. What actually happens is covered next.
 
 ### The Virtual DOM (React Element Tree)
 
@@ -67,10 +60,8 @@ What actually happens instead is covered next (render phase internals).
 
 ### Why Reconciliation Exists
 
-- Why not just rewrite the whole DOM on every state change? Because that'd be wasteful:
-  1. Writing to the DOM is (relatively) **slow**
-  2. Usually only a **small part** of the DOM actually needs to change (e.g. `showModal = true` only needs the modal's markup inserted — the rest of the page stays put)
-- **Reconciliation** = deciding exactly which DOM elements need to be **inserted, deleted, or updated** to match the latest state → produces a list of DOM ops
+- Rewriting the whole DOM on every state change would be wasteful: DOM writes are (relatively) **slow**, and usually only a **small part** needs to change (e.g. `showModal = true` only needs the modal inserted — the rest of the page stays put)
+- **Reconciliation** = deciding exactly which DOM elements need to be **inserted, deleted, or updated**
 - The **reconciler** (Fiber) is the "engine"/heart of React — it's what lets us just describe *what* the UI should look like (via state) instead of manually touching the DOM ourselves
 
 ### The Fiber Tree
@@ -94,14 +85,55 @@ CURRENT FIBER TREE          UPDATED FIBER TREE (workInProgress)
     h3   button
 ```
 
-- New virtual DOM is diffed against the current Fiber tree → produces the **"work in progress" tree** (React's internal name for the updated Fiber tree)
-- **Diffing** = comparing elements **by their position in the tree**, current vs. updated
+- New virtual DOM is diffed against the current Fiber tree → produces the **"work in progress" tree** (React's internal name for the updated Fiber tree; how diffing itself decides these outcomes is detailed below)
 - Per-Fiber outcomes seen in this example:
   - `Btn` text changed → marked **DOM update**
   - `Modal`/`Overlay`/`h3`/`button` no longer in the new tree → marked **DOM deletion**
   - `Video` re-rendered (child of `App`) but **unchanged** → no DOM mutation at all, even though its component function ran again
 - All the flagged mutations get collected into a **list of effects**, which the **commit phase** then applies to the real DOM
 - 👉 Jonas notes even this is still a simplified version of what Fiber actually does
+
+### How Diffing Works
+
+> 👉 Left out of the render-phase lecture, but essential: **diffing** is the specific algorithm reconciliation uses to compare renders.
+
+- **2 fundamental assumptions** diffing relies on:
+  1. **Two elements of different types will produce different trees**
+  2. **Elements with a stable `key`** (consistent across renders) **stay the same** across renders
+- 🔑 These assumptions look obvious, but they're what let diffing be **fast**: without them, comparing trees would cost ~**O(n³)** (~1 billion ops for 1000 elements); with them, it's **O(n)** (~1000 ops for 1000 elements)
+- Diffing compares elements **by position in the tree**, current vs. updated render. Only **2 situations** matter:
+  1. **Different element at the same position**
+  2. **Same element at the same position** (next lecture)
+
+#### Situation 1 — Different Element, Same Position
+
+```
+<div>                      <header>
+  <SearchBar />      →       <SearchBar />
+</div>                     </header>
+```
+
+- "Different" = the **type** changed (`div` → `header`, or one component → a different component, e.g. `SearchBar` → `ProfileMenu`) — applies the same way to DOM elements and React elements (component instances)
+- 🚨 React assumes the element **and its entire sub-tree** are no longer valid:
+  - The old element and all its children are **destroyed and removed from the DOM**
+  - This **includes their state** — even if a child element looks unchanged, if its parent's type changed, the whole branch is torn down and rebuilt from scratch as **brand-new instances**
+- 👉 **State is not preserved** across a type change at the same tree position — this is what "resets state" in practice, with real implications for how apps behave (examples next lecture)
+
+#### Situation 2 — Same Element, Same Position
+
+```
+<div className="hidden">                <div className="active">
+  <SearchBar wait={1} />        →         <SearchBar wait={5} />
+</div>                                   </div>
+```
+
+- More straightforward: if the element at a position is the **same type** as before, React just **keeps it in the DOM** — including all child elements and, crucially, **component state**
+- Works identically for **DOM elements** and **React elements** (components)
+- If something about it *did* change, it's not the type — just an **attribute** (e.g. `className`) or a **prop** (e.g. `wait`). React handles this efficiently:
+  - DOM element → **mutates** the changed attribute(s) in place
+  - React element (component) → just **passes in the new props**
+- 👉 Nothing is torn down or recreated — the underlying DOM node and the component's state **persist** across the render
+- 🔑 Sometimes this default (state persisting) is **not** what we want — that's what the **`key` prop** is for: forcing React to treat an element as a brand-new instance (destroy + recreate) even when type and position stay the same (next lecture)
 
 ### Commit Phase, Precisely
 
