@@ -328,3 +328,112 @@ Component → <Tab /> → Component Instance → RETURNS → React Element → I
 - They are simply **converted to DOM elements** when they are painted onto the screen, as this final step
 
 > 🔑 **Takeaway — the full journey:** write a **component** (blueprint) → **use** it, which creates one or more **component instances** in the tree, each with its own state/props/lifecycle → each instance **returns** a **React element** (an immutable JS object, the result of `React.createElement()`, produced by compiled JSX) → that React element is eventually **inserted into the DOM** as a real **DOM element (HTML)**, which is what actually gets painted on screen.
+
+## The `key` Prop
+
+- 👉 A **special prop** used to tell the diffing algorithm that an element is **unique** — works for both **DOM elements** and **React elements** (components)
+- In practice, a `key` gives each **component instance** a unique identity, letting React **distinguish between multiple instances** of the same component type
+- Ties directly back to diffing's **2nd assumption**: elements with a **stable `key`** (same across renders) are treated as the **same** element
+
+### Two behaviors, two use cases
+
+1. **Key stays the same across renders** → the element is **kept in the DOM**, even if its **position in the tree changes**
+   - 🔑 **Use case 1: keys in lists** — this is *why* we've been adding `key` to list items all course
+2. **Key changes between renders** → the element is **destroyed and a new one created** in its place, even if its **position in the tree stays exactly the same**
+   - 🔑 **Use case 2: using keys to reset state**
+
+> 👉 So the `key` prop lets us **override** diffing's default position-based behavior in both directions: force React to **preserve** an instance across a position change (lists), or force it to **tear down and recreate** an instance even though nothing about its position or type changed (state reset).
+
+### Use Case 1 — Keys in Lists, Worked Example
+
+**Without keys:**
+
+```jsx
+<ul>
+  <Question question={q[1]} />
+  <Question question={q[2]} />
+</ul>
+```
+
+- Adding a new item to the **top** of the list:
+
+```jsx
+<ul>
+  <Question question={q[0]} />   {/* new */}
+  <Question question={q[1]} />   {/* was 1st child, now 2nd */}
+  <Question question={q[2]} />   {/* was 2nd child, now 3rd */}
+</ul>
+```
+
+- The `q[1]` and `q[2]` elements are clearly still **the same questions as before**, but they now sit at **different positions** in the tree (2nd/3rd instead of 1st/2nd)
+- Diffing only compares **by position**, so it has no way to know these are "the same" element that just moved — per the diffing rules, it **removes and recreates** both DOM elements at their new positions
+- 🚨 This is **wasted work**: destroying and rebuilding an unchanged DOM element hurts performance, but React has **no way of knowing** it's unnecessary — developers can *see* it intuitively, React can't
+
+**With keys:**
+
+```jsx
+<ul>
+  <Question key="q1" question={q[1]} />
+  <Question key="q2" question={q[2]} />
+</ul>
+```
+
+- Adding the new item to the top now looks like this:
+
+```jsx
+<ul>
+  <Question key="q0" question={q[0]} />   {/* new */}
+  <Question key="q1" question={q[1]} />   {/* different position, same key */}
+  <Question key="q2" question={q[2]} />   {/* different position, same key */}
+</ul>
+```
+
+- `q1` and `q2` are still at **different positions** in the tree, but their **`key` stays stable** across renders
+- 👉 Per the diffing rules, elements with a stable key are **kept in the DOM** rather than destroyed/recreated, even though their position changed
+- Result: a **more performant UI** — the unaffected elements are left alone, and only the truly new element is created
+- 👉 The difference is invisible on tiny lists, but becomes **significant on large lists** (thousands of elements), which does happen in real apps
+
+> 🔑 **Rule of thumb:** always use the `key` prop on multiple **child elements of the same type** (e.g. items rendered via `.map()`) — not just to silence React's warning, but because it's the only way to give React the information it needs to skip unnecessary DOM work.
+
+### Use Case 2 — Key Prop to Reset State, Worked Example
+
+> 👉 No big code example needed here — this gets built for real in the **next lecture**. This is just the concept.
+
+```jsx
+<QuestionBox>
+  <Question
+    question={{ title: "React vs JS", body: "Why should we use React?" }}
+    key="q23"
+  />
+</QuestionBox>
+```
+
+- `Question` owns its own **`answer` state** — say the user has typed *"React allows us to build apps faster"*
+- Now the **question prop changes** to a new question, but the element stays at the **same position** in the tree:
+
+```jsx
+<QuestionBox>
+  <Question
+    question={{ title: "Best course ever :D", body: "This is THE React course!" }}
+    key="q23"   /* same key */
+  />
+</QuestionBox>
+```
+
+- 🚨 With the **same key** (or no key at all), this is "same element, same position" → per the diffing rules, the DOM element **and its state are kept** — the `answer` state (and whatever the user typed) **stays around**
+- 👉 But that old answer is now **irrelevant** to the new question — keeping it doesn't make logical sense for the app
+- **Fix:** give the new question a **different key**:
+
+```jsx
+<QuestionBox>
+  <Question
+    question={{ title: "Best course ever :D", body: "This is THE React course!" }}
+    key="q89"   /* different key */
+  />
+</QuestionBox>
+```
+
+- 👉 A changed key tells React this is a **different component instance**, even though type and position are identical — React **destroys** the old instance and **creates a brand-new one**
+- Result: the `answer` state is **reset** (back to empty) — exactly the behavior needed so the leftover answer doesn't linger on a new, unrelated question
+
+> 🔑 **Takeaway:** whenever you need to **reset state** tied to a component instance, give that element a `key` that **changes** across renders. Doesn't come up constantly, but when it does, this is *the* solution — worth recognizing on sight.
