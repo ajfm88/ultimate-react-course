@@ -437,3 +437,108 @@ Component → <Tab /> → Component Instance → RETURNS → React Element → I
 - Result: the `answer` state is **reset** (back to empty) — exactly the behavior needed so the leftover answer doesn't linger on a new, unrelated question
 
 > 🔑 **Takeaway:** whenever you need to **reset state** tied to a component instance, give that element a `key` that **changes** across renders. Doesn't come up constantly, but when it does, this is *the* solution — worth recognizing on sight.
+
+## Rules for Render Logic
+
+> To make the rendering process work the way described above, render logic must follow a few simple rules.
+
+### The Two Types of Logic in React Components
+
+**1. Render logic**
+
+- 👉 Code that lives at the **top level** of the component function
+- 👉 **Participates in describing** how the component view looks like (including helper functions called from JSX, like a `createList()` invoked inside the `return`)
+- 👉 **Executed every time** the component renders — i.e. every time the function is called
+
+**2. Event handler functions**
+
+- 👉 **Executed as a consequence of the event** the handler is listening for (e.g. a `change` event)
+- 👉 Code that actually **does things**: update state, perform an HTTP request, read an input field, navigate to another page, etc.
+
+```jsx
+function Question({ question }) {
+  const [newAnswer, setNewAnswer] = useState('');     // render logic
+  const numAnswers = question.answers.length ?? 0;    // render logic
+
+  const handleNewAnswer = function (e) {               // event handler
+    if (question.closed) return;
+    setNewAnswer(e.target.value);
+  };
+
+  const createList = function () {                     // render logic (called from JSX)
+    return (
+      <ul>
+        {question.answers.map((q) => (
+          <li>{q}</li>
+        ))}
+      </ul>
+    );
+  };
+
+  return (
+    <div>
+      <h3>{question.title}</h3>
+      <p>{question.body}</p>
+      {question.hasAnswer ? (
+        createList()
+      ) : (
+        <input value={newAnswer} onChange={handleNewAnswer} />
+      )}
+    </div>
+  );
+}
+```
+
+> 🔑 **Why the distinction matters:** render logic **describes** the view (must stay pure — see rules next lecture), while event handlers **make things happen** in the app. Mixing the two — e.g. mutating state directly inside render logic instead of inside a handler — breaks React's assumptions about components being pure functions of state/props.
+
+### Refresher: Functional Programming Principles
+
+- **Side effect:** a function **depends on**, or **modifies**, data **outside its own scope** — i.e. the function's **"interaction with the outside world"**
+  - Examples: mutating an external variable/object, HTTP requests, writing to the DOM, setting timers
+
+```js
+// ✅ Pure function
+function circleArea(r) {
+  return 3.14 * r * r;
+}
+
+// ✋ Impure — side effect: mutates an outside variable
+const areas = {};
+function circleArea(r) {
+  areas.circle = 3.14 * r * r;
+}
+
+// ✋ Impure — unpredictable output: `date` changes every call
+function circleArea(r) {
+  const date = Date.now();
+  const area = 3.14 * r * r;
+  return `${date}: ${area}`;
+}
+```
+
+- **Pure function:** a function with **no side effects**
+  - Does **not** change any variables outside its own scope
+  - Given the **same input**, it **always returns the same output** → predictable
+- An **impure** function is the opposite: output can differ for the same input, and/or it mutates something outside itself
+
+> 👋 **Side effects are not bad!** A program is only useful if it interacts with the outside world at some point (an app that never touches data or the DOM does nothing). The goal isn't "no side effects ever" — it's keeping side effects **out of render logic** (next lecture covers exactly where they *do* belong: event handlers, and later, the `useEffect` hook).
+
+### Rules for Render Logic
+
+> ☝️ **The one big rule: components must be pure functions when it comes to render logic.**
+
+- Given the **same props** (input), a component instance should always return the **same JSX** (output)
+- In practice: **render logic must produce no side effects** — no interaction with the "outside world" is allowed at the top level of a component function. So, in render logic:
+  - 👉 Do **NOT** perform **network requests** (API calls)
+  - 👉 Do **NOT** start **timers**
+  - 👉 Do **NOT** directly use the **DOM API** (e.g. `addEventListener`)
+  - 👉 Do **NOT** mutate objects or variables **outside the function's scope** — 🔑 **this is exactly why we can't mutate props**: doing so would be a side effect
+  - 👉 Do **NOT** update **state or refs** — updating state in render logic would create an **infinite loop** (state updates aren't technically side effects, but they're forbidden here for this separate reason)
+- Some side effects are technically "not allowed" by this rule but are harmless and used constantly anyway: `console.log`, generating random numbers — safe to keep doing
+
+### Where Side Effects *Do* Belong
+
+- 👋 **Event handler functions** are not render logic → side effects are **allowed and encouraged** there
+- For a side effect that needs to run **as soon as the component first renders**, register it with the special **`useEffect`** hook (covered next section)
+
+> 🔑 **Takeaway:** "no side effects" only applies **inside render logic**. Anything reactive to user interaction goes in an event handler; anything that needs to run on render/mount goes in `useEffect` — never directly in the component's top-level code.
