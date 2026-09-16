@@ -542,3 +542,91 @@ function circleArea(r) {
 - For a side effect that needs to run **as soon as the component first renders**, register it with the special **`useEffect`** hook (covered next section)
 
 > 🔑 **Takeaway:** "no side effects" only applies **inside render logic**. Anything reactive to user interaction goes in an event handler; anything that needs to run on render/mount goes in `useEffect` — never directly in the component's top-level code.
+
+## How State Updates Are Batched
+
+> 👉 Recall from the first render-phase lecture: **renders are not triggered immediately**, but **scheduled** for when the JS engine has some "free time." This lecture zooms into the other half of that sentence — **there is also batching of multiple `setState` calls in event handlers**.
+
+```jsx
+const [answer, setAnswer] = useState('');
+const [best, setBest] = useState(true);
+const [solved, setSolved] = useState(false);
+
+const reset = function () {          // event handler function
+  setAnswer('');
+  console.log(answer);
+  setBest(true);
+  setSolved(false);
+};
+
+return (
+  <div>
+    <button onClick={reset}>Reset</button>
+    {/* ... */}
+  </div>
+);
+```
+
+- `reset` is an **event handler**, triggered by the button's `onClick` — it calls **three separate `setState` functions** in a row, reverting `answer`, `best`, and `solved` back to their original values
+
+### ❌ What We Might Intuitively Expect (But Isn't What Happens)
+
+- Naive assumption: each `setState` call updates its state **immediately**, then triggers its **own** render + commit — so 3 state updates in one handler → **3 separate re-renders**
+- 🚨 **This is NOT how React actually updates multiple pieces of state in the same event handler.**
+
+### ✅ What Actually Happens: Batching
+
+- All `setState` calls inside the **same event handler** are collected and applied **in one go** → a single **batched state update**
+- React then triggers **just ONE render + commit** for the entire event handler — not one per `setState` call
+
+**Why this makes sense:**
+
+- If multiple pieces of state are updated **together**, they conceptually represent **one new view** — so the screen should only update **once**
+- Updating the screen after each individual `setState` would produce **wasted renders**: we're not interested in the intermediate states, only the **final** one that already reflects all three updates
+- 🔑 **Batching is a built-in performance optimization** — no wasted renders, better for performance, and it comes automatically from React, not something we have to opt into
+
+> ⚠️ Batching is extremely useful, but it can also produce **surprising results** — covered next.
+
+### Updating State Is Asynchronous
+
+```jsx
+const reset = function () {
+  setAnswer('');
+  console.log(answer);   // 🤔 what value does `answer` hold here?
+  setBest(true);
+  setSolved(false);
+};
+```
+
+- 🤔 **Trick question:** right after calling `setAnswer('')`, what does `answer` hold at the `console.log` line?
+- Walking through what's actually happening:
+  1. State lives in the **Fiber tree**, but only gets written there during the **render phase**
+  2. At this point in the code, the **render phase has not happened yet** — React is still reading through the event handler line by line, just **collecting** what needs to update (that's the whole point of batching)
+  3. So `answer` at this line still holds the **current** (pre-update) state, not `''` — even though we already *called* `setAnswer('')`
+- 🔑 This is called **stale state**: the variable is "stale" because the update hasn't been reflected yet — a state update is only reflected in the variable **after the re-render**
+- 👉 This is exactly why we say **updating state in React is asynchronous** — React doesn't hand us the updated value right after the `setState` call, only after the component re-renders
+- 👉 This holds true **even with a single state variable** being updated — it's not specific to batching multiple pieces of state
+
+### Getting the New Value Immediately: the Updater-Function Form
+
+- Sometimes we **do** need the new value right away — specifically, when we need to **update state based on a previous update in the same event handler**
+- Solution: pass a **callback function** into `setState` instead of a plain value — e.g. `setAnswer((answer) => ...)`
+- 👉 This is the same **updater function** pattern already used earlier in the course (e.g. `setCountAdvice((count) => count + 1)`) — now we know exactly *why* it's necessary: it reads the value React is about to commit, not the stale closure value.
+
+### Batching Beyond Event Handler Functions
+
+- Before **React 18**, automatic batching only happened inside **event handlers** — not in code that runs **after** a browser event has already finished (e.g. a `setTimeout` callback, or a `.then()` on a promise)
+- But we often need to update state in exactly those delayed situations — e.g. running `reset` one second after a click, or after data has finished fetching
+- **Before React 18:** in timeouts, promises, and native DOM events (`addEventListener`), state updates were **NOT** batched — each `setState` call triggered its **own** render, so 3 updates → 3 renders
+- **React 18+:** automatic batching now applies **everywhere**, all the time:
+
+| | React 17 | React 18+ |
+|---|---|---|
+| Event handlers (`onClick={reset}`) | ✅ | ✅ |
+| Timeouts (`setTimeout(reset, 1000)`) | ❌ | ✅ |
+| Promises (`fetchStuff().then(reset)`) | ❌ | ✅ |
+| Native events (`el.addEventListener('click', reset)`) | ❌ | ✅ |
+
+> 🔑 If working with an older React codebase, remember batching used to be limited to event handlers only — this can explain extra re-renders in legacy code.
+
+- **Opting out:** in extremely rare cases where automatic batching is problematic, wrap the state update in **`ReactDOM.flushSync()`** to exclude just that update from batching — 👉 in practice, you'll almost never need this.
