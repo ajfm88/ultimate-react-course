@@ -630,3 +630,74 @@ const reset = function () {
 > 🔑 If working with an older React codebase, remember batching used to be limited to event handlers only — this can explain extra re-renders in legacy code.
 
 - **Opting out:** in extremely rare cases where automatic batching is problematic, wrap the state update in **`ReactDOM.flushSync()`** to exclude just that update from batching — 👉 in practice, you'll almost never need this.
+
+## How Events Work in React
+
+### DOM Refresher: Event Propagation and Delegation
+
+> 👉 A refresher on vanilla-JS event propagation/delegation first — this is what React does behind the scenes with our events, and it also explains strange bubbling-related bugs when they show up in a React app.
+
+- Consider a **DOM tree** (a real DOM tree here — not the Fiber tree or the React element tree): `document` → `<html>` → `<body>` → `<div id="root">` → `<header class="topbar">` → `<div class="options">` → three `<button class="btn">`s
+- When an event (e.g. a click on a button) fires, the **event object is created at the root of the document**, not where the click happened
+
+**1. Capturing phase** — the event travels **down** the entire tree from the root, through every parent, until it reaches the **target element** (the element the event actually happened on)
+
+**2. Target element** — the element the event originated on; this is normally where we attach our event handler
+
+**3. Bubbling phase** — immediately after reaching the target, the event travels back **up** the entire tree, through every parent, all the way to the root
+
+- 🔑 Two key facts about this process:
+  1. During capturing/bubbling, the event **passes through every single child/parent element one by one** — as if the event had originated in each of them
+  2. **By default, event handlers listen on both the target *and* during the bubbling phase** — so any parent's handler for the same event type also **fires during bubbling**
+- Example: a click handler on a `<button>` (target) *and* a click handler on `<header>` (an ancestor) will **both run** on a single click — the header's handler fires as the event bubbles through it
+- To stop this, call **`e.stopPropagation()`** on the event object — works in both vanilla JS and React, but 👉 **rarely necessary** — only use it if there's truly no other solution
+
+### Event Delegation
+
+- **Event delegation:** handling events for **multiple elements** centrally, in **one single parent element**, instead of attaching a handler to each child
+- Why: with e.g. 1,000 buttons, giving each its own handler function copy would hurt performance/memory — instead:
+  1. Add **one handler** to the shared **parent** element (e.g. `.options`)
+  2. Inside it, check **`e.target`** to see which element the event actually originated from
+  3. If `e.target` is one of the `<button>`s, handle the event in that single central function
+- Works because of **bubbling**: a click on any button bubbles up to the parent, where the one handler is listening
+- 👋 **Very common in vanilla JS apps** — but **not so common in React apps**, since React gives us a declarative way to attach handlers per element already. Still worth understanding because it's literally **what React does internally** with events (next).
+
+### How React Handles Events
+
+```jsx
+<button
+  className="btn"
+  onClick={() => setLoading(true)}
+/>
+```
+
+- Writing `onClick` on a `<button>` looks like it should behave like vanilla JS: `document.querySelector('.btn').addEventListener('click', ...)` — attaching the handler **directly on that element**
+- 🚨 **That's not what React actually does internally.**
+- Instead, React registers **all** our event handler functions on the **root DOM container** (usually `div#root`, but can be any DOM element) — conceptually like `document.querySelector('#root').addEventListener('click', ...)`
+- 👉 What actually happens under the hood is more complex than this simplification, but the key takeaway: React physically registers **one handler function per event type**, at the **root node of the Fiber tree**, during the **render phase**
+- If there are multiple `onClick` handlers across the app, React bundles them together into **one single `onClick` listener** on the root — yet another job the **Fiber tree** performs behind the scenes
+
+**In other words: React performs event delegation for all events, automatically, for every app.**
+
+- A click on `<button>` still fires an event object, which travels down (capturing) to the target, then **bubbles back up** — but now it's only actually **handled once it reaches the root container**, where React's one delegated listener lives, matching it against the right handler(s) for that target
+- After being handled there, the event **keeps bubbling** up past the root and disappears — the whole process is automatic and invisible, purely a performance optimization
+- 🔑 **Subtlety:** bubbling in React follows the **DOM tree**, not the **component tree** — a component being a "child" of another component in the component tree does **not** guarantee it's a DOM descendant in the rendered DOM tree. Keep this in mind when reasoning about event bubbling in a React app.
+
+### Synthetic Events
+
+```jsx
+<input onChange={(e) => setText(e.target.value)} />
+```
+
+- **`SyntheticEvent`:** React's **wrapper** around the DOM's native event object (`PointerEvent`, `MouseEvent`, `KeyboardEvent`, etc.) — the `e` we receive in a handler
+- 👉 Has the **same interface** as native event objects — includes `stopPropagation()` and `preventDefault()`
+- 👉 **Fixes browser inconsistencies**, so events work the **exact same way across all browsers**
+- 👉 **Most synthetic events bubble** (including `focus`, `blur`, and `change`) — the **one exception is `scroll`**, which does **not** bubble in React
+
+### Event Handlers: React vs. Vanilla JS
+
+- **Naming:** React uses **camelCase** prop names — `onClick` (vs. HTML's lowercase `onclick`, vs. vanilla JS `addEventListener('click', ...)` which drops the `on` prefix entirely)
+- **Preventing default behavior:** in vanilla JS, `return false` from a handler can stop the browser's default action (e.g. page reload on form submit) — 🚨 **this does NOT work in React**. The only way is calling **`e.preventDefault()`** on the synthetic event object
+- **Capturing phase:** to handle an event during the **capturing** phase instead of bubbling, append **`Capture`** to the handler name — e.g. `onClickCapture` instead of `onClick`. 👉 Rarely ever needed, but good to know it exists.
+
+> 🔑 **Takeaway:** camelCase names, `e.preventDefault()` instead of `return false`, and (rarely) a `Capture` suffix — that's everything needed to work with events in practice. Everything else (delegation, synthetic wrapping) happens automatically behind the scenes.
