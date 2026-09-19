@@ -701,3 +701,69 @@ const reset = function () {
 - **Capturing phase:** to handle an event during the **capturing** phase instead of bubbling, append **`Capture`** to the handler name — e.g. `onClickCapture` instead of `onClick`. 👉 Rarely ever needed, but good to know it exists.
 
 > 🔑 **Takeaway:** camelCase names, `e.preventDefault()` instead of `return false`, and (rarely) a `Capture` suffix — that's everything needed to work with events in practice. Everything else (delegation, synthetic wrapping) happens automatically behind the scenes.
+
+## Libraries vs. Frameworks & The React Ecosystem
+
+> 👉 Not about how React works internally, but about **what React actually is**: a **library**, not a framework — and why that distinction matters for future React developers.
+
+### First, an Analogy 🍣 (Making Sushi)
+
+**All-in-one kit** *(→ framework: **Angular, Vue, Svelte**)*
+
+- 👍 **Ease of mind:** all the ingredients are included
+- 👎 **No choice:** you're stuck with whatever the kit ships with, even the parts you don't like
+
+**Separate ingredients** *(→ library: **React**)*
+
+- 👍 **Freedom:** you pick the best ingredient for each part
+- 👎 **Decision fatigue:** you have to research and buy everything separately — and if one chosen brand disappears or changes, you redo that decision
+
+> 🔑 This maps directly onto building a web app with a **framework** (kit) vs. a **library** (à la carte) — details next.
+
+### Framework vs. Library
+
+**Framework** *("all-in-one kit" — Angular, Vue, Svelte)*
+
+- A **complete structure** with everything needed to build a full large-scale app — **"batteries included"**: routing, styling, HTTP requests, form management, etc. all out of the box
+- 👍 **Ease of mind:** everything needed for a complete application is included
+- 👎 **No choice:** you're stuck with the framework's tools and conventions — *not always bad*, and for some developers not a downside at all
+
+**Library** *("separate ingredients" — React)*
+
+- A piece of code shared by developers for other developers to use
+- React is specifically a **"view" library**: all it does is **draw components onto the UI (the view)**
+- Routing, styling, HTTP requests, form management, etc. are **not part of React** — a large-scale React app pulls those in as **external third-party libraries**
+- 👉 You *can* build a React app with React alone, but that only makes sense for **small apps or while learning**
+- 👍 **Freedom:** you can (or *need* to) choose the 3rd-party libraries that best fit each app — and since every app has different requirements, bundling everything into one framework may not even be necessary
+- 👎 **Decision fatigue:** you need to **research, download, learn, and stay up-to-date** with multiple external libraries
+
+> 👋 Not as bad as it sounds — by the end of the course, we'll have covered the most important libraries that go into most React projects (next: the React ecosystem).
+
+### The React 3rd-Party Library Ecosystem
+
+- React's huge popularity has produced a **massive ecosystem** of libraries for different needs — and these are **options for different application needs**, not a checklist to use all at once
+- ⭐ = the ones **used later in this course** (highlighted in the slide)
+
+| # | Category | Libraries |
+|---|---|---|
+| 1 | **Routing** (for SPAs) | ⭐ **React Router**, React Location |
+| 2 | **HTTP requests** | ⭐ **`fetch()`** (built into JS), Axios |
+| 3 | **Remote state management** | ⭐ **React Query**, SWR, Apollo |
+| 4 | **Global state management** | ⭐ **Context API**, ⭐ **Redux**, Zustand |
+| 5 | **Styling** | ⭐ **CSS Modules**, ⭐ **styled-components**, ⭐ **Tailwind CSS** |
+| 6 | **Form management** | ⭐ **React Hook Form**, Formik |
+| 7 | **Animations/transitions** | Motion, react-spring |
+| 8 | **UI components** | MUI (Material UI), Chakra UI, Mantine |
+
+- 👉 Many devs feel **overwhelmed** by so many decisions and choices among third-party libraries — this (among other reasons) led to the rise of **opinionated React frameworks** such as **Next.js, Remix, and Gatsby**, which make those choices for you
+
+### Frameworks Built on Top of React
+
+- **Next.js, Remix, Gatsby** are frameworks **built on top of React** — they **extend** React's functionality
+- **"Opinionated":** their authors baked in their own opinions on how to handle **routing, state management, styling**, etc.
+- **"Vanilla" React app:** *you* pick and assemble external libraries (HTTP requests, styling, routing, form management…)
+- **App built with a React framework:** those decisions are **included out of the box** → project development is **easier and faster**, with a better overall **developer experience (DX)**
+- 👉 Different frameworks specialize in different things, but all **offload setup work** from you, and offer extra features beyond being opinionated — e.g. **server-side rendering (SSR)** and **static site generation (SSG)**
+- Many are effectively **full-stack React frameworks** — enough features to build **full-stack apps** with React as the base layer
+
+> 👋 Course note: a large project with **Next.js** is planned for the last part of the course (not included at launch). Frameworks come **after** mastering React itself and its most important third-party libraries.
