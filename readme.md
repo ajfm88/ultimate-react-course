@@ -41,13 +41,14 @@
 
 A practice-heavy course that goes from React fundamentals to advanced patterns by building real, polished apps, backed up by diagrams, theory, and a look under the hood of how React actually works. Covers component design, state management (`useState`, `useReducer`, Context API, Redux, Redux Toolkit, React Query), routing with React Router, styling (Tailwind CSS, CSS Modules, Styled Components), advanced patterns (compound components, render props, HOCs), a full-stack project with Supabase, and 16+ hours on Next.js with the App Router, React Server Components, and Server Actions.
 
-|  #  | Project                                                                       | Live Demo                                                     |
-| :-: | ------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| 01  | [Pizza Menu (Components, props, JSX)](https://github.com/ajfm88/ultimate-react-course/tree/main/01-pizza-menu)     | [Live Demo](https://fast-react-pizza-menu.netlify.app/)          |
-| 02  | [Steps (useState, event handlers, children prop)](https://github.com/ajfm88/ultimate-react-course/tree/main/02-steps)               | N/A                                                               |
-| 03  | [Travel List (useState and state management)](https://github.com/ajfm88/ultimate-react-course/tree/main/03-travel-list) | [Live Demo](https://travel-list-jonas.netlify.app/)             |
-| 04  | [Eat-n-split (Practice project)](https://github.com/ajfm88/ultimate-react-course/tree/main/04-eat-n-split)    | [Live Demo](https://eat-n-split.netlify.app/)                    |
-| 05  | [usePopcorn (useEffect, data fetching, custom hooks)](https://github.com/ajfm88/ultimate-react-course/tree/main/05-usepopcorn)     | [Live Demo](https://usepopcorn.netlify.app/)                     |
+|  #  | Project                                                                                                                        | Live Demo                                               |
+| :-: | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| 01  | [Pizza Menu (Components, props, JSX)](https://github.com/ajfm88/ultimate-react-course/tree/main/01-pizza-menu)                 | [Live Demo](https://fast-react-pizza-menu.netlify.app/) |
+| 02  | [Steps (useState, event handlers, children prop)](https://github.com/ajfm88/ultimate-react-course/tree/main/02-steps)          | N/A                                                     |
+| 03  | [Travel List (useState and state management)](https://github.com/ajfm88/ultimate-react-course/tree/main/03-travel-list)        | [Live Demo](https://travel-list-jonas.netlify.app/)     |
+| 04  | [Eat-n-split (Practice project)](https://github.com/ajfm88/ultimate-react-course/tree/main/04-eat-n-split)                     | [Live Demo](https://eat-n-split.netlify.app/)           |
+| 05  | [usePopcorn (useEffect, data fetching, custom hooks)](https://github.com/ajfm88/ultimate-react-course/tree/main/05-usepopcorn) | [Live Demo](https://usepopcorn.netlify.app/)            |
+| 06  | [How React Works](https://github.com/ajfm88/ultimate-react-course/tree/main/06-how-react-works)                                | N/A                                                     |
 
 ## 🎬 <a name="tutorial">Tutorial</a>
 

@@ -767,3 +767,41 @@ const reset = function () {
 - Many are effectively **full-stack React frameworks** — enough features to build **full-stack apps** with React as the base layer
 
 > 👋 Course note: a large project with **Next.js** is planned for the last part of the course (not included at launch). Frameworks come **after** mastering React itself and its most important third-party libraries.
+
+## 🎯 Practical Summary
+
+> Not a recap of everything — only the **practical implications** of React's internals that matter when building real apps.
+
+### Components, Instances, Elements
+
+- 🧩 A **component** = blueprint for a piece of UI (like a house blueprint). **Using** it (`<Question />`) makes React create a **component instance** (the actual house — holds props, state, effects…). An instance, when rendered, returns a **React element**
+
+### Rendering
+
+- ☎️ **"Rendering"** = **calling component functions** + calculating which DOM elements need to be inserted/deleted/updated. It has **nothing to do with writing to the DOM** (that's **committing**). Every render/re-render = the function is **called again**
+- 🔁 Only the **initial render** and **state updates** trigger a render — and it happens for the **entire application**, not just one component
+- 👨‍👩‍👧 Re-rendering a component **re-renders all its children** too. Reconciliation ensures not all of them get **updated in the DOM** — but the re-rendering itself can still hurt **performance** (more later in the course)
+
+### Diffing & Keys
+
+- 🧬 **Diffing** decides which DOM elements to add/modify:
+  - Same position in the element tree → DOM element **and state stay**
+  - Different position, or different element type → DOM element **and state are destroyed**
+- 🔑 **`key` prop** lets React distinguish component instances:
+  - **Same key across renders** → element **kept in the DOM** (why we need keys in **lists**)
+  - **Changed key** → element **destroyed and rebuilt** → a **trick to reset state**
+
+### Golden Rules
+
+- 🪆 **Never declare a component inside another component!** It gets **re-created on every parent re-render**, so React sees it as **brand new** each time and **resets its state** whenever the parent's state updates. Always declare components at the **top level of a file**
+- 🔮 **Render logic** (produces the JSX) must have **no side effects**: no API calls, no timers, no object/variable mutations, no state updates. Side effects belong in **event handlers** and **`useEffect`** (next section)
+
+### Commit, Batching, Events
+
+- 📱 The DOM is updated in the **commit phase** — not by React, but by a **renderer**: **ReactDOM**. That's why a React web app always needs **both** libraries. Other renderers (e.g. **React Native**) let React target other platforms
+- 🗂️ Multiple state updates in an event handler are **batched** → **one re-render**. So we **can't read a state variable right after updating it** → state updates are **asynchronous**. Since **React 18**, batching also happens in **timeouts, promises, and native event handlers**
+- 🌐 Event handlers receive a **synthetic event object** (not the native one) so events behave **the same across all browsers**. **Most synthetic events bubble** — including `focus`, `blur`, `change` (which don't bubble natively) — **except `scroll`**
+
+### Library vs. Framework
+
+- 🛠️ **React is a library, not a framework:** assemble your app from your favorite **third-party libraries** — flexible and free, but you must **find and learn** them yourself. Not a big problem: the course covers the **most commonly used** ones in its main projects
