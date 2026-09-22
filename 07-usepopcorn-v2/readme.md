@@ -68,3 +68,63 @@ Just logging the data looks fine, but calling `setMovies` there creates an infin
 The network tab shows endless requests to the API. Setting state at the top level with no fetch at all (e.g. `setWatched([])`) makes React throw a "too many re-renders" error.
 
 The API key belongs in a variable declared outside the component so it isn't recreated on every render. The fix is the `useEffect` hook, covered next.
+
+## A First Look at Effects
+
+We just used `useEffect` for the first time to fetch movie data as the component mounts. What is an effect, and how does it differ from an event handler? (Details in the next slides.)
+
+### Where to Create Side Effects
+
+**Review: what is a side effect?**
+
+- Any **interaction between a React component and the world outside it**, or "code that actually does something"
+- Examples: **data fetching**, setting up **subscriptions**, setting up **timers**, **manually accessing the DOM**
+- We need side effects **all the time** (they make apps *do something*), but **never in render logic**
+
+**Two places to create them**
+
+| | Event handlers | Effects (`useEffect`) |
+|---|---|---|
+| **Triggered by** | **Events**: `onClick`, `onSubmit`, etc. | **Rendering** |
+| **Use when** | Reacting to a user event is enough | The code must run **automatically as the component renders**, not in response to an event |
+
+- 👉 Reacting to events is **sometimes not enough** for what an app needs, which is where effects come in
+- 👉 An effect lets us write code that runs at different moments of the component instance lifecycle: **mount, re-render, or unmount**
+
+### Event Handlers vs. Effects
+
+Fetching movie data is a side effect, and it can be done in two places. Both produce the **same result, but at different moments**:
+
+```jsx
+// Event handler: runs when the event happens
+function handleClick() {
+  fetch(`http://www.omdbapi.com/?s=inception`)
+    .then((res) => res.json())
+    .then((data) => setMovies(data.Search));
+}
+
+// Effect: runs after the component renders
+useEffect(function () {
+  fetch(`http://www.omdbapi.com/?s=inception`)
+    .then((res) => res.json())
+    .then((data) => setMovies(data.Search));
+
+  return () => console.log('Cleanup');
+}, []);
+```
+
+**The 3 parts of an effect**
+
+1. **Effect code** (the function body)
+2. **Cleanup function** (optional): returned from the effect, called **before the component re-renders or unmounts**
+3. **Dependency array** (`[]`): controls **when** the effect runs
+
+| | Event handlers | Effects (`useEffect`) |
+|---|---|---|
+| **Executed** | When the **corresponding event happens** | **After the component mounts** (initial render) and **after subsequent re-renders** (according to the dependency array) |
+| **Used to** | **React** to an event | Keep a component **synchronized with an external system** (here: the movie data from the API) |
+
+- 👉 **Think synchronization, not lifecycles.** Mount/re-render/unmount is a helpful mental model, but the real purpose of effects is to keep the component **in sync with the external world**
+- ☝️ **Event handlers are the preferred way of creating side effects.** Don't overuse `useEffect`: anything that can be handled in an event handler should be
+
+> We'll come back to all of this after using `useEffect` more in practice.
