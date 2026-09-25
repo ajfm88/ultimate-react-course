@@ -128,3 +128,110 @@ useEffect(function () {
 - ☝️ **Event handlers are the preferred way of creating side effects.** Don't overuse `useEffect`: anything that can be handled in an event handler should be
 
 > We'll come back to all of this after using `useEffect` more in practice.
+
+## What's the useEffect Dependency Array?
+
+- 👉 By default, effects run **after every render**. We can prevent that by passing a **dependency array** as the **second argument** to `useEffect`
+- 👉 Without a dependency array, **React doesn't know when to run the effect**
+- 👉 **Each time one of the dependencies changes, the effect runs again**
+- ☝️ **Every state variable and prop used inside the effect MUST be included in the dependency array**
+
+```jsx
+const title = props.movie.Title;
+const [userRating, setUserRating] = useState('');
+
+useEffect(
+  function () {
+    if (!title) return;
+    document.title = `${title} ${
+      userRating && `(Rated ${userRating} 🌟)`
+    }`;
+
+    return () => (document.title = 'usePopcorn');
+  },
+  [title, userRating]
+);
+```
+
+- Here the effect uses `title` (a **prop**) and `userRating` (a piece of **state**) — so both **must** appear in the dependency array `[title, userRating]`
+- 🚨 Otherwise, if `title` or `userRating` changes, React doesn't know about it and won't re-run the effect — this leads to a bug called a **stale closure** (more on this in a later, more advanced section)
+
+## useEffect Is a Synchronization Mechanism
+
+**The mechanics of effects**
+
+- 👉 `useEffect` is like an **event listener** listening for one or more dependencies to change — **whenever a dependency changes, it executes the effect again**
+- 👉 Effects **react** to updates to the state/props used inside them (their dependencies) — so **effects are "reactive"**, similar to how React reacts to state updates by re-rendering the UI
+
+```
+[title, userRating]  (dependencies)
+  title changes      ─┐
+  userRating changes ─┴→  EFFECT IS EXECUTED AGAIN  →  DOCUMENT TITLE IS UPDATED
+```
+
+- Using the earlier example: whenever `title` or `userRating` changes, React **re-executes the effect**, which updates `document.title` (the browser tab title) — e.g. `Interstellar (Rated 10 🌟)`
+
+**Synchronization, not events**
+
+- **Component state/props** → **synchronize with** → **external system** (the side effect)
+- Here, the component's state and props are kept **in sync with the document title** — an external system living outside React
+- 👉 The sync is **one-way**: changing the document title some other way does **not** update `title`/`userRating` back — same as with regular state, where we still say the UI is "in sync" with state even though the sync only flows state → UI
+- 🔑 **`useEffect` truly is a synchronization mechanism** — it synchronizes effects with the state of the application. This becomes clear every time we use an effect in practice.
+
+## Synchronization and Lifecycle
+
+- Dependencies are always **state or props** — and updating state/props is exactly what causes a component to **re-render**
+- 🔑 **Effects and the component lifecycle are deeply interconnected.** This is why, when `useEffect` was introduced, many people mistook it for a "lifecycle hook" rather than a synchronization mechanism
+- 👉 **Takeaway:** we can use the dependency array to run effects **when the component renders or re-renders** — `useEffect` is about **both** synchronization and lifecycle
+
+**The three types of dependency arrays**
+
+| Code | Synchronization | Lifecycle |
+|---|---|---|
+| `useEffect(fn, [x, y, z])` | Effect synchronizes with `x`, `y`, and `z` | Runs on **mount** and on **re-renders triggered by updating** `x`, `y`, or `z` — no other state/prop update triggers it |
+| `useEffect(fn, [])` | Effect synchronizes with **no state/props** | Runs **only on mount** (initial render) — safe to run once, since it uses no values relevant to rendering |
+| `useEffect(fn)` *(no array)* | Effect synchronizes with **everything** — every state and prop in the component | Runs on **every render** — usually a bad idea 🛑 |
+
+## When Are Effects Executed?
+
+> "Effects run after render" isn't wrong, but it's not the full story — here's the actual timeline.
+
+```
+MOUNT (INITIAL RENDER)
+  ↓
+COMMIT
+  ↓
+BROWSER PAINT
+  ↓
+EFFECT ✨            ← runs here, AFTER the browser has painted
+  ↓
+[title changes → prop update]
+  ↓
+RE-RENDER
+  ↓
+COMMIT
+  ↓
+(layout effect — see below)
+  ↓
+BROWSER PAINT
+  ↓
+EFFECT ✨            ← title is a dependency, so the effect runs again
+  ↓
+   ... repeats ...
+  ↓
+UNMOUNT
+```
+
+- 🚨 Effects are executed **only after the browser has painted** the component on screen — **not** immediately after render
+- 👉 Effects run **asynchronously**, after the paint has already happened
+- **Why:** effects can contain long-running work (e.g. data fetching). If React ran the effect **before** painting, it would **block** the paint, leaving users staring at the **old UI** for too long
+- 🚨 **Consequence:** if an effect **sets state**, an **additional render** is required to reflect that in the UI — one more reason not to overuse effects
+
+**Walking the example:** `title` starts as `'Interstellar'` → mount → commit → paint → effect runs, sets `document.title`. Later `title` changes to `'Interstellar Wars'` (a prop update) → re-render → commit → (layout effect slot) → paint → since `title` is in the dependency array `[title, userRating]`, the **effect runs again**, updating `document.title` to match. This mount → update cycle can repeat many times before the component **unmounts**.
+
+**Layout effects (`useLayoutEffect`)**
+
+- A different type of effect that runs **before** the browser paints (fills the gap between commit and paint)
+- 👉 **Almost never needed** — the React team **discourages** its use. Mentioned here just so it's known to exist.
+
+> 👉 Two more "gaps" remain in this timeline (around browser paint / unmount) — covered later in the section.
