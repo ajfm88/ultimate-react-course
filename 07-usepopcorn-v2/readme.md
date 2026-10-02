@@ -211,15 +211,19 @@ RE-RENDER
   ↓
 COMMIT
   ↓
-(layout effect — see below)
+LAYOUT EFFECT       ← see below
   ↓
 BROWSER PAINT
+  ↓
+CLEANUP 🧹           ← cleans up the PREVIOUS effect, right before the new one runs
   ↓
 EFFECT ✨            ← title is a dependency, so the effect runs again
   ↓
    ... repeats ...
   ↓
 UNMOUNT
+  ↓
+CLEANUP 🧹           ← runs one last time, after unmount
 ```
 
 - 🚨 Effects are executed **only after the browser has painted** the component on screen — **not** immediately after render
@@ -234,4 +238,46 @@ UNMOUNT
 - A different type of effect that runs **before** the browser paints (fills the gap between commit and paint)
 - 👉 **Almost never needed** — the React team **discourages** its use. Mentioned here just so it's known to exist.
 
-> 👉 Two more "gaps" remain in this timeline (around browser paint / unmount) — covered later in the section.
+## The Cleanup Function
+
+> The third part of an effect, and the piece that fills the remaining gaps in the timeline above.
+
+- A **cleanup function** is a function we can **return from an effect** — it's **optional**
+- Example: an effect sets `document.title` to the movie title; its cleanup resets it back to `'usePopcorn'` so the tab title stays correct even after the component disappears
+
+```jsx
+useEffect(
+  function () {
+    if (!title) return;
+    document.title = `${title} ${
+      userRating && `(Rated ${userRating} 🌟)`
+    }`;
+
+    return () => (document.title = 'usePopcorn'); // cleanup
+  },
+  [title, userRating]
+);
+```
+
+**Runs on two occasions:**
+
+1. **Before the effect is executed again** — cleans up the result of the *previous* run, right before the next one
+2. **After the component instance has unmounted** — a chance to reset/undo the side effect entirely
+
+| | |
+|---|---|
+| Component **renders** | Execute effect **if** the dependency array includes updated data |
+| Component **unmounts** | Execute the **cleanup function** |
+
+> 🔑 Together, the dependency array (mount/re-render) and the cleanup function (re-render/unmount) give us control over **the entire component lifecycle**.
+
+**When a cleanup function is needed:** whenever the side effect **keeps happening** after the component has re-rendered or unmounted.
+
+| Effect | Cleanup |
+|---|---|
+| HTTP request | Cancel the request (avoids **race conditions** from overlapping requests) |
+| API subscription | Cancel the subscription |
+| Start a timer | Stop the timer |
+| Add an event listener | Remove the listener |
+
+> ☝️ **Rule: each effect should do only one thing.** Needing multiple side effects in a component is normal — just use **multiple `useEffect` hooks**, one per concern. This makes each effect easier to understand and easier to clean up.
