@@ -49,7 +49,8 @@ A practice-heavy course that goes from React fundamentals to advanced patterns b
 | 04  | [Eat-n-split (Practice project)](https://github.com/ajfm88/ultimate-react-course/tree/main/04-eat-n-split)                         | [Live Demo](https://eat-n-split.netlify.app)           |
 | 05  | [usePopcorn (Component Composition & Reusability, props)](https://github.com/ajfm88/ultimate-react-course/tree/main/05-usepopcorn) | [Live Demo](https://usepopcorn.netlify.app)            |
 | 06  | [How React Works](https://github.com/ajfm88/ultimate-react-course/tree/main/06-how-react-works)                                    | N/A                                                    |
-| 07  | [usePopcorn v2 (useEffect, data fetching)](https://github.com/ajfm88/ultimate-react-course/tree/main/05-usepopcorn)                | [Live Demo](https://usepopcorn.netlify.app)            |
+| 07  | [usePopcorn v2 (useEffect, data fetching)](https://github.com/ajfm88/ultimate-react-course/tree/main/07-usepopcorn-v2)             | [Live Demo](https://usepopcorn.netlify.app)            |
+| 08  | [usePopcorn v3 (custom hooks, refs and more state)](https://github.com/ajfm88/ultimate-react-course/tree/main/08-usepopcorn-v3)    | [Live Demo](https://usepopcorn.netlify.app)            |
 
 ## 🎬 <a name="tutorial">Tutorial</a>
 
