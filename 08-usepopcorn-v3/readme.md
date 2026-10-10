@@ -88,3 +88,31 @@ useEffect(fnZ, []);
 
 - It's the simplest way to **associate each hook with its value** based on call order
 - Developers **don't have to manually name** each hook — the order does it for us
+
+## Initializing State With a Callback (Lazy Initial State)
+
+Persisting the watched list in `localStorage`: **write** on every change, **read** once on mount.
+
+```jsx
+// Read: initialize state from localStorage on the initial render only
+const [watched, setWatched] = useState(function () {
+  const storedValue = localStorage.getItem("watched");
+  return JSON.parse(storedValue);
+});
+
+// Write: keep localStorage in sync whenever watched changes
+useEffect(
+  function () {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  },
+  [watched]
+);
+```
+
+- 👉 `useState` also accepts a **callback function**. React calls it **once, on the initial render**, and uses its return value as the initial state. It's **ignored on re-renders**
+- The callback must be **pure** and take **no arguments**
+- ☝️ Whenever the initial state depends on some **computation**, pass a function in. Don't call one:
+  - ✅ `useState(fn)`: React calls it once
+  - ❌ `useState(fn())`: the function runs on **every render**, even though React ignores the result after the first
+- Writing in an **effect** rather than in `handleAddWatched` **synchronizes** `watched` with `localStorage`, so deleting a movie updates storage automatically. In the event handler, `watched` would also still be **stale**, so you'd have to build `[...watched, movie]` by hand
+- `localStorage` only stores **strings**: `JSON.stringify` on write, `JSON.parse` on read
