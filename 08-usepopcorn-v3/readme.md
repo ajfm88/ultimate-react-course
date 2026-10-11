@@ -116,3 +116,26 @@ useEffect(
   - ❌ `useState(fn())`: the function runs on **every render**, even though React ignores the result after the first
 - Writing in an **effect** rather than in `handleAddWatched` **synchronizes** `watched` with `localStorage`, so deleting a movie updates storage automatically. In the event handler, `watched` would also still be **stale**, so you'd have to build `[...watched, movie]` by hand
 - `localStorage` only stores **strings**: `JSON.stringify` on write, `JSON.parse` on read
+
+## Summary of Defining and Updating State
+
+**1. Creating state**
+
+| | Code | Notes |
+|---|---|---|
+| **Simple** | `const [count, setCount] = useState(23);` | The most common way |
+| **Based on a function** (lazy evaluation) | `const [count, setCount] = useState(() => localStorage.getItem('count'));` | Use when the initial state depends on a **computation** |
+
+- 👉 The function must be **pure** and accept **no arguments**. It's called **only on the initial render** and ignored on re-renders
+
+**2. Updating state**
+
+| | Code | Notes |
+|---|---|---|
+| **Simple** | `setCount(1000);` | Pass the next state directly |
+| **Based on current state** | `setCount((c) => c + 1);` | Callback must be **pure** and **return the next state** |
+
+- 👉 The callback form is the **preferred way** of updating state whenever it makes sense (e.g. incrementing a counter)
+- 🚨 **Never mutate objects or arrays** in state. **Replace** them with a new object/array that includes the changes, and pass that to the setter
+
+> 🔑 Both creating and updating state have a **simple form** and a **callback form**. Use the callback when the value depends on a computation (creating) or on the current state (updating).
