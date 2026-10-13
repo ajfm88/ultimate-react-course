@@ -139,3 +139,48 @@ useEffect(
 - 🚨 **Never mutate objects or arrays** in state. **Replace** them with a new object/array that includes the changes, and pass that to the setter
 
 > 🔑 Both creating and updating state have a **simple form** and a **callback form**. Use the callback when the value depends on a computation (creating) or on the current state (updating).
+
+## Introducing Another Hook: useRef
+
+### What Are Refs?
+
+```jsx
+const myRef = useRef(23);
+myRef.current = 1000; // write
+myRef.current;        // read
+```
+
+- 👉 A **ref** ("reference") is a **"box" (object) with a mutable `.current` property** that is **persisted across renders** ("normal" variables are always reset)
+- `useRef(initialValue)` sets the initial `.current`; we read and write it via `.current`
+- 👉 `.current` is **mutable**, unlike everything else in React
+
+**Two big use cases**
+
+1. Creating a **variable that stays the same between renders** (e.g. **previous state**, **`setTimeout` id**)
+2. **Selecting and storing DOM elements** (a DOM element is just data to preserve across renders)
+
+- 👉 Refs are for **data that is NOT rendered**: they usually appear only in **event handlers or effects**, not in JSX. Data that participates in the visual output → use **state**
+- ☝️ **Do NOT write or read `.current` in render logic** (like state): it would be a side effect. Mutate refs inside **`useEffect`** (or event handlers)
+
+### State vs. Refs
+
+Refs are like **state with less powers**.
+
+| | Persists across renders | Updating causes re-render | Immutable | Asynchronous updates |
+|---|:---:|:---:|:---:|:---:|
+| **State** | ✅ | ✅ | ✅ | ✅ |
+| **Refs** | ✅ | ❌ | ❌ | ❌ |
+
+- Both are **remembered across renders**; the big difference is that **updating state re-renders the component, updating a ref does not**
+- Refs are **not async**: the new `.current` can be read **immediately** after updating, like any regular JS object (state can't)
+
+```
+Need to store data
+  → Will data change at some point?
+      NO  → Regular const variable
+      YES → Should it re-render the component?
+              NO  → Ref (useRef)      e.g. preserving previous state, storing a setTimeout id
+              YES → State (useState)
+```
+
+> 🔑 Use **state** for data that should **re-render** the component; use **refs** for data the component should only **remember over time**, never re-render for.
