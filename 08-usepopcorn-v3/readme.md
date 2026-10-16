@@ -184,3 +184,51 @@ Need to store data
 ```
 
 > 🔑 Use **state** for data that should **re-render** the component; use **refs** for data the component should only **remember over time**, never re-render for.
+
+## Reusing Logic With Custom Hooks
+
+### What Are Custom Hooks and When to Create One
+
+- 👉 In React we can reuse two things: **UI** and **logic**
+
+```
+"I need to reuse:"
+  UI    → Component
+  LOGIC → Does the logic contain any hooks?
+            NO  → Regular function (inside or outside the component)
+            YES → Custom hook
+```
+
+- Custom hooks let us reuse **non-visual logic** in multiple components: stateful logic, and really **any logic that contains one or more React hooks**
+- A logic with hooks **can't** be extracted into a regular function, so it needs a custom hook
+- 👉 **One custom hook, one purpose**: it should do one specific, well-defined thing, to make it **reusable and portable** (even across projects). Don't just dump all of a component's hooks into one custom hook
+- Many custom hook **libraries** are shared on **NPM**
+- 🚨 **Rules of hooks apply to custom hooks too**, since they're built from regular hooks
+
+### Anatomy of a Custom Hook
+
+```jsx
+function useFetch(url) {
+  const [data, setData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(function () {
+    fetch(url)
+      .then((res) => res.json())
+      .then((res) => setData(res));
+  }, []);
+
+  return [data, isLoading];
+}
+```
+
+- **Function name must start with `use`** (`useFetch`): this is **not optional**. Otherwise it's just a regular function in the eyes of React (and the linter)
+- **Needs to use one or more hooks** (here: two `useState` + one `useEffect`). That is what separates it from a regular function
+- **Unlike components**, which only receive props and must return JSX, a custom hook can **receive and return any relevant data** (usually `[]` or `{}`)
+
+| | Component | Custom hook |
+|---|---|---|
+| **Is** | A JS function | A JS function |
+| **Receives** | Props only | Any data |
+| **Returns** | JSX | Any data (usually an array or object) |
+| **Name** | Capitalized | Starts with `use` |
