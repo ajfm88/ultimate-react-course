@@ -61,3 +61,77 @@ function reducer(state, action) {
 2. Components **dispatch actions** (`type` + optional `payload`)
 3. The **reducer** gets the **current state + action**, decides based on `action.type`, and **returns the next state**
 4. That return value becomes the new state → component **re-renders** → UI updates
+
+## Managing Complex State With Reducers
+
+### Why useReducer?
+
+👉 State management with `useState` **is not enough in certain situations**:
+
+1. Components with **a lot of state variables and state updates**, spread across many event handlers **all over the component** (or even multiple components)
+2. **Multiple state updates need to happen at the same time**, as a reaction to the same event (e.g. "starting a game": score → 0, `isPlaying` → true, start a timer)
+3. Updating one piece of state **depends on one or multiple other pieces of state**
+
+> 👉 In all these situations, **`useReducer` can be of great help**.
+
+### Managing State With useReducer
+
+```jsx
+const [state, dispatch] = useReducer(reducer, initialState);
+
+function reducer(state, action) {
+  switch (action.type) {
+    case "dec":
+      return state - 1;
+    case "inc":
+      return state + 1;
+    case "setCount":
+      return action.payload;
+    default:
+      throw new Error("Unknown");
+  }
+}
+```
+
+- 👉 An **alternative way of setting state**, ideal for **complex state** and **related pieces of state**
+- **`state`**: related pieces of state are usually stored together in a **state object** (can be a primitive, but usually an object)
+- **`reducer`**: function containing **all the logic to update state**. **Decouples state logic from the component** → cleaner, more readable components. Like **`setState()` with superpowers**
+- **`reducer` is a pure function** (🚨 **no side effects!**) that takes the **current `state` and `action`** and **returns the next state**. State is immutable, so it must **return a new state**, never mutate
+- **`action`**: an **object that describes how to update state**. Usually has a **`type`** and a **`payload`** (input data); the reducer uses them to determine the next state
+- **`dispatch`**: function to **trigger state updates** by **"sending" actions from event handlers to the reducer**. Used **instead of `setState()`**
+
+### How Reducers Update State
+
+```
+event handler → dispatch(action) → reducer(currentState, action) → RETURNS next state → RE-RENDER
+```
+
+- Example action: `{ type: "updateDay", payload: 23 }`: probably means "set `day` to 23"
+- The action doesn't need this exact shape, but `type` + `payload` is the **standard** adopted by most developers
+- `dispatch` has access to the reducer (passed to `useReducer`) and gives it the **current state**
+- Updating state triggers a **re-render** of the component instance, as always
+- 👉 **Why "reducer"?** Same idea as `array.reduce()`: it **accumulates all actions into one single state over time**
+
+| | `useState` | `useReducer` |
+|---|---|---|
+| **Update with** | `setState(updatedState)` | `dispatch(action)` |
+| **Flow** | setter → next (updated) state → re-render | dispatch → **reducer** (current state + action) → next state → re-render |
+| **Setup** | Simpler, more straightforward | More complicated, but solves the problems above |
+
+### A Mental Model: The Bank
+
+👉 **Task:** withdraw $5,000 from your bank account. You don't walk into the vault and grab the cash yourself: you tell the person at the desk what you want, and **they** do it on your behalf.
+
+| Bank | useReducer | Role |
+|---|---|---|
+| **Customer** | **Dispatcher** (`dispatch`) | **Requests** the update |
+| **Bank employee** | **Reducer** | **Makes** the update |
+| **Request message** | **Action** | **How** to make the update |
+| **Vault** | **State** | **What** needs to be updated |
+
+```js
+{ type: "withdraw", payload: { amount: 5000, account: 923577 } }
+```
+
+- The employee knows how to deposit, withdraw, open/close accounts, request loans… **without you worrying about the details**
+- Just like a reducer **decouples and abstracts all state updating logic** away from components
