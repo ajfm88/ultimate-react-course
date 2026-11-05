@@ -23,7 +23,7 @@ const [count, dispatch] = useReducer(reducer, 0);
 ```jsx
 function reducer(state, action) {
   console.log(state, action); // 0 1
-  return state + action;      // whatever is returned becomes the NEXT state
+  return state + action; // whatever is returned becomes the NEXT state
 }
 ```
 
@@ -112,22 +112,22 @@ event handler → dispatch(action) → reducer(currentState, action) → RETURNS
 - Updating state triggers a **re-render** of the component instance, as always
 - 👉 **Why "reducer"?** Same idea as `array.reduce()`: it **accumulates all actions into one single state over time**
 
-| | `useState` | `useReducer` |
-|---|---|---|
-| **Update with** | `setState(updatedState)` | `dispatch(action)` |
-| **Flow** | setter → next (updated) state → re-render | dispatch → **reducer** (current state + action) → next state → re-render |
-| **Setup** | Simpler, more straightforward | More complicated, but solves the problems above |
+|                 | `useState`                                | `useReducer`                                                             |
+| --------------- | ----------------------------------------- | ------------------------------------------------------------------------ |
+| **Update with** | `setState(updatedState)`                  | `dispatch(action)`                                                       |
+| **Flow**        | setter → next (updated) state → re-render | dispatch → **reducer** (current state + action) → next state → re-render |
+| **Setup**       | Simpler, more straightforward             | More complicated, but solves the problems above                          |
 
 ### A Mental Model: The Bank
 
 👉 **Task:** withdraw $5,000 from your bank account. You don't walk into the vault and grab the cash yourself: you tell the person at the desk what you want, and **they** do it on your behalf.
 
-| Bank | useReducer | Role |
-|---|---|---|
-| **Customer** | **Dispatcher** (`dispatch`) | **Requests** the update |
-| **Bank employee** | **Reducer** | **Makes** the update |
-| **Request message** | **Action** | **How** to make the update |
-| **Vault** | **State** | **What** needs to be updated |
+| Bank                | useReducer                  | Role                         |
+| ------------------- | --------------------------- | ---------------------------- |
+| **Customer**        | **Dispatcher** (`dispatch`) | **Requests** the update      |
+| **Bank employee**   | **Reducer**                 | **Makes** the update         |
+| **Request message** | **Action**                  | **How** to make the update   |
+| **Vault**           | **State**                   | **What** needs to be updated |
 
 ```js
 { type: "withdraw", payload: { amount: 5000, account: 923577 } }
