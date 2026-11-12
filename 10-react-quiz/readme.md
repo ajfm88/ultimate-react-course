@@ -68,7 +68,7 @@ function reducer(state, action) {
 
 👉 State management with `useState` **is not enough in certain situations**:
 
-1. Components with **a lot of state variables and state updates**, spread across many event handlers **all over the component** (or even multiple components)
+1. Components with **a lot of state variables and state updates**, spread across many event handlers **all over the component** (or even multiple components) → quickly becomes **overwhelming and hard to manage**
 2. **Multiple state updates need to happen at the same time**, as a reaction to the same event (e.g. "starting a game": score → 0, `isPlaying` → true, start a timer)
 3. Updating one piece of state **depends on one or multiple other pieces of state**
 
@@ -100,6 +100,8 @@ function reducer(state, action) {
 - **`action`**: an **object that describes how to update state**. Usually has a **`type`** and a **`payload`** (input data); the reducer uses them to determine the next state
 - **`dispatch`**: function to **trigger state updates** by **"sending" actions from event handlers to the reducer**. Used **instead of `setState()`**
 
+🔑 **4 pieces must fit together:** a **state object**, a **reducer** (ultimately the one that updates the state), an **action object**, and a **`dispatch` function**
+
 ### How Reducers Update State
 
 ```
@@ -108,7 +110,7 @@ event handler → dispatch(action) → reducer(currentState, action) → RETURNS
 
 - Example action: `{ type: "updateDay", payload: 23 }`: probably means "set `day` to 23"
 - The action doesn't need this exact shape, but `type` + `payload` is the **standard** adopted by most developers
-- `dispatch` has access to the reducer (passed to `useReducer`) and gives it the **current state**
+- Behind the scenes, `dispatch` has access to the reducer (passed to `useReducer`) and gives it the **current state**: **`dispatch` coordinates the whole thing**
 - Updating state triggers a **re-render** of the component instance, as always
 - 👉 **Why "reducer"?** Same idea as `array.reduce()`: it **accumulates all actions into one single state over time**
 
@@ -133,5 +135,40 @@ event handler → dispatch(action) → reducer(currentState, action) → RETURNS
 { type: "withdraw", payload: { amount: 5000, account: 923577 } }
 ```
 
-- The employee knows how to deposit, withdraw, open/close accounts, request loans… **without you worrying about the details**
+- Flow: you **dispatch** your request to the employee → they check your account, go to the vault (**state**), take the right amount, and hand it over → cycle complete
+- The employee is a **middleman** who knows how to deposit, withdraw, open/close accounts, request loans… **without you worrying about the details**
 - Just like a reducer **decouples and abstracts all state updating logic** away from components
+
+## useState vs. useReducer
+
+| `useState` | `useReducer` |
+|---|---|
+| 👉 Ideal for **single, independent pieces of state** (numbers, strings, single arrays, etc.) | 👉 Ideal for multiple **related pieces of state** and **complex state** (e.g. object with many values and nested objects or arrays) |
+| 👉 Logic to update state is placed directly in event handlers or effects, **spread all over one or multiple components** (e.g. lifted state in child components) | 👉 Logic to update state lives in **one central place, decoupled from components**: the reducer |
+| 👉 State is updated by **calling `setState`** (setter returned from `useState`) | 👉 State is updated by **dispatching an action** to a reducer, which knows how to perform each update |
+| 👉 **Imperative** state updates | 👉 **Declarative** state updates: complex state transitions are **mapped** to actions with well-defined names |
+| 👉 **Easy** to understand and to use (no reducer to write) | 👉 More **difficult** to understand and implement (takes more time, but can be worth it) |
+
+```jsx
+// useState: imperative, set each piece yourself
+setScore(0);
+setPlaying(true);
+setTimerSec(0);
+
+// useReducer: declarative, the reducer handles the rest
+dispatch({ type: "startGame" });
+```
+
+### When to Use useReducer?
+
+1. **Just one piece of state?** → YES: `useState`
+2. **Do states frequently update together?** (like the `startGame` example) → YES: go to the **willingness check**
+3. **Over 3 or 4 pieces of related state, including objects?** (complex state) → YES: go to the **willingness check**
+4. **Too many event handlers make components large and confusing?** → YES: go to the **willingness check**
+5. All NO → `useState`
+
+🔑 **Willingness check: are you willing to implement slightly more complex code?** (i.e. write a reducer function)
+- YES → **`useReducer`**
+- NO → `useState`
+
+> ☝️ **`useState` should remain your default choice for managing state.** Reach for `useReducer` only when `useState` causes one of the problems above.
