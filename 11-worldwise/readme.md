@@ -54,3 +54,52 @@
 
 - ☝️ Technically **every React app so far was an SPA** (React updates the DOM, never reloads)
 - But **professional, complex apps need URLs and routing** → only then do they become **real single-page applications**
+
+## Styling Options in React
+
+- React is **unopinionated**: it **doesn't care how you style** your app → lots of options, most from **third-party libraries**
+
+| Styling option | Where? | How? | Scope | Based on |
+|---|---|---|---|---|
+| **Inline CSS** | JSX elements | `style` prop | **JSX element** (local) | CSS |
+| **CSS / Sass file** | External file | `className` prop | **Entire app** ❌ (global, causes problems) | CSS |
+| **CSS Modules** | **One external file per component** | `className` prop | **Component** ✅ | CSS |
+| **CSS-in-JS** | External file or component file | **Creates a new component** | **Component** ✅ | JavaScript |
+| **Utility-first CSS** (Tailwind) | JSX elements | `className` prop | **JSX element** | CSS |
+
+> 👋 Alternative to writing CSS: **UI component libraries** like **MUI, Chakra UI, Mantine**
+
+### Inline CSS
+
+- `style` prop on JSX elements; **scoped to that exact element**
+- More common in React than plain HTML, because of React's **separation of concerns** idea (a component owns its own look)
+
+### Global CSS / Sass file
+
+- Used so far: one external file, then `className` in JSX. Sass works the same way
+- 🚨 **Global**: any element in the whole app can use any class
+  - Unclear which components use which classes → editing a class has **repercussions elsewhere**
+  - Adding a class with an **existing name** → **clashes**
+- 👉 **Global CSS is a nightmare in large apps**; in professional projects CSS is almost never global. It should be **scoped to a component**
+
+### CSS Modules ✅ (used in this project)
+
+- Like regular CSS, but **one CSS file per component**
+- Styles are **scoped to that component only**: no other component can use them
+- Components become **more modular and reusable**, and it better reflects React's **separation of concerns**
+
+### CSS-in-JS
+
+- **Write CSS inside JavaScript**, in the same file as the component (e.g. **styled-components**)
+- Creates **React components with the styles already applied**, used like any other component
+- Fully embraces the idea that a **component contains all info about its appearance**, CSS included
+
+### Utility-first CSS (Tailwind)
+
+- **Predefined utility classes** for individual styles: flexbox, responsive layouts, hover effects, the whole UI, **without leaving the JSX markup**
+- Getting more popular every day
+
+### UI component libraries
+
+- **Prebuilt, pre-styled components** common to most web apps (MUI, Chakra UI, Mantine): build a whole project **without writing CSS**
+- ☝️ Not ideal for beginners; worth exploring later
