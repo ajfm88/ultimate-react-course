@@ -35,6 +35,30 @@
         "lng": 13.376933665713324
       },
       "id": 98443197
+    },
+    {
+      "cityName": "Porto",
+      "country": "Portugal",
+      "emoji": "🇵🇹",
+      "date": "2027-11-05T10:00:00.000Z",
+      "notes": "",
+      "position": {
+        "lat": 41.1579,
+        "lng": -8.6291
+      },
+      "id": 55120843
+    },
+    {
+      "cityName": "Barcelona",
+      "country": "Spain",
+      "emoji": "🇪🇸",
+      "date": "2027-08-02T10:00:00.000Z",
+      "notes": "",
+      "position": {
+        "lat": 41.3874,
+        "lng": 2.1686
+      },
+      "id": 31874902
     }
   ]
 }
