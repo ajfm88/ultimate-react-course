@@ -103,3 +103,43 @@
 
 - **Prebuilt, pre-styled components** common to most web apps (MUI, Chakra UI, Mantine): build a whole project **without writing CSS**
 - ☝️ Not ideal for beginners; worth exploring later
+
+## Storing State in the URL
+
+- 👉 The **URL is an excellent place to store UI state**, and an **alternative to `useState`** in some situations
+- **UI state** = state that affects **what the UI looks like**
+  - Examples: open/closed panels, currently selected list item, list sorting order, applied list filters
+- With React Router, that state is **managed by the URL**
+
+### Why?
+
+1. Easy way to store state in a **global place**, accessible to **all components** in the app
+   - No more lifting state to a parent and passing it down with **props**: read it from the URL **anywhere in the tree**
+2. Good way to **"pass" data from one page into the next**, without storing it somewhere temporary in the app
+3. Makes it possible to **bookmark and share** the page with the **exact UI state** it had (e.g. an online shop filtered by color and price)
+
+### Anatomy of a URL
+
+```
+www.example.com/app/cities/lisbon?lat=38.728&lng=-9.141
+               └───path──┘ └params┘└────query string───┘
+```
+
+| Part | Example | Used for |
+|---|---|---|
+| **Path** | `/app/cities` | Which component is displayed. Technically state, but not useful for state management in this sense |
+| **Params** | `lisbon` | **Passing data to the next page** |
+| **Query string** | `lat=38.728&lng=-9.141` | **Global state** that should be accessible everywhere |
+
+- 👉 **Params** and the **query string** are the **React Router tools** for storing state in the URL
+
+### Example: params and query string in WorldWise
+
+```
+/app/cities/lisbon?lat=38.728&lng=-9.141
+/app/cities/berlin?lat=52.536&lng=13.377
+```
+
+- Clicking a city in the list links to a URL with its **param** (`lisbon`) → the next page loads **that city's** details
+- The **query string** (`lat`, `lng`) holds the **map position**, unique to each city
+- 👉 **City name and GPS location are read from the URL** instead of from application state
